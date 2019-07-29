@@ -1,6 +1,8 @@
+import { Subject, Observable } from 'rxjs';
+
 const baseUrl = 'wss://hometask.eg1236.com/game1/';
 
-export enum GameCommands {
+export enum CommandsType {
     help = 'help',
     new = 'new',
     map = 'map',
@@ -10,7 +12,7 @@ export enum GameCommands {
 class Ws {
     private promise!: Promise<WebSocket>;
 
-    public clientPromise(): Promise<WebSocket> {
+    public getWsClient(): Promise<WebSocket> {
         if (!this.promise) {
           this.promise = this.newClientPromise();
         }
@@ -32,8 +34,14 @@ class Ws {
 const socket: Ws = new Ws();
 
 export class WebSocketService {
+    private message: Subject<MessageEvent> = new Subject();
+
+    public get message$(): Observable<MessageEvent> {
+        return this.message.asObservable();
+    }
+
     public closeConnection(): void {
-        socket.clientPromise()
+        socket.getWsClient()
             .then(ws => {
                 ws.close(1000);
                 console.info('Соединение закрыто чисто');
@@ -43,21 +51,16 @@ export class WebSocketService {
             });
     }
 
-    public sendCommand(command: GameCommands, options?: any): void {
-        const fullCommand = options
-            ? `${command} ${options}`
-            : command;
-        socket.clientPromise()
+    public sendCommand(type: CommandsType, params?: string | null): void {
+        const fullCommand = params
+            ? `${type} ${params}`
+            : type;
+        socket.getWsClient()
             .then(ws => {
                 ws.send(fullCommand);
                 ws.onmessage = (event: MessageEvent): void => {
-                    this.showMessageData(event);
-                }
+                    this.message.next(event);
+                }  
             })
-    }
-
-    private showMessageData(event: MessageEvent): void {
-        console.log('M: ', event);
-        console.log('Получены данные: ', event.data);
     }
 }
