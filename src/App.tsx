@@ -1,19 +1,27 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { WebSocketSrv } from './services';
 import { CommandsType } from './services/websocket.service';
 import { getCommandsType, preparePlayingField } from './helpers';
+import GameSelector from './components/game-selector/GameSelector';
+import PlayingField from './components/playing-field/PlayingField';
 
+export interface PlayingFieldValue {
+  value: string;
+  x: number;
+  y: number;
+}
 interface Props {}
 interface State {
-    playingField: string[][],
+    gameLevel: string;
+    playingField: PlayingFieldValue[][],
 }
 
 export default class App extends React.Component<Props, State> {
     state: State = {
+        gameLevel: '1',
         playingField: [],
     };
     private unsubscribe$: Subject<void> = new Subject();
@@ -23,10 +31,13 @@ export default class App extends React.Component<Props, State> {
         WebSocketSrv.message$
             .pipe(takeUntil(this.unsubscribe$))
             .subscribe(event => {
+              // console.log(event);
                 if (getCommandsType(event.data) === CommandsType.map) {
-                    console.log(event);
                     const map = preparePlayingField(event.data.slice(5, -1));
-                    console.log('Получены данные: ', map);
+                    // console.log('Получены данные: ', map);
+                    this.setState({
+                      playingField: map,
+                    });
                 }
             });
     }
@@ -37,30 +48,41 @@ export default class App extends React.Component<Props, State> {
     }
 
     private initialization(): void {
-        WebSocketSrv.sendCommand(CommandsType.help);
-        WebSocketSrv.sendCommand(CommandsType.new, '1');
+        // WebSocketSrv.sendCommand(CommandsType.help);
+        WebSocketSrv.sendCommand(CommandsType.new, this.state.gameLevel);
         WebSocketSrv.sendCommand(CommandsType.map);
-        WebSocketSrv.sendCommand(CommandsType.open, '0 0');
-        WebSocketSrv.sendCommand(CommandsType.map);
+    }
+
+    private startNewGame = (): void => {
+      WebSocketSrv.sendCommand(CommandsType.new, this.state.gameLevel);
+      WebSocketSrv.sendCommand(CommandsType.map);
+    }
+
+    private onLevelChange = (level: string): void => {
+      this.setState({
+        gameLevel: level,
+      });
+      WebSocketSrv.sendCommand(CommandsType.new, level);
+      WebSocketSrv.sendCommand(CommandsType.map);
+    }
+
+    private selectCell = (cell: PlayingFieldValue): void => {
+      WebSocketSrv.sendCommand(CommandsType.open, `${cell.x} ${cell.y}`)
+      WebSocketSrv.sendCommand(CommandsType.map);
     }
 
     render() {
         return (
             <div className="App">
-                <header className="App-header">
-                    <img src={logo} className="App-logo" alt="logo" />
-                    <p>
-                    Edit <code>src/App.tsx</code> and save to reload.
-                    </p>
-                    <a
-                        className="App-link"
-                        href="https://reactjs.org"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-                    Learn React
-                    </a>
-                </header>
+              <div className="App__toolbar">
+                <GameSelector level={this.state.gameLevel} levelChange={this.onLevelChange}/>
+                <button type="button" className="App__btn" onClick={this.startNewGame}>
+                  Начать заново
+                </button>
+              </div>
+              <div className="App__playingField">
+                <PlayingField playingField={this.state.playingField} select={this.selectCell} />
+              </div>
             </div>
         );
     }

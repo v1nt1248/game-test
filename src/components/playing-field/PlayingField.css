@@ -1,0 +1,13 @@
+.PlayingField {
+    position: relative;
+    box-sizing: border-box;
+}
+
+.PlayingField__row {
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+}
