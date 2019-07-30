@@ -1,0 +1,13 @@
+.GameTimer {
+    position: relative;
+    box-sizing: border-box;
+    height: 30px;
+    font-size: 16px;
+    line-height: 1;
+    color: #fafafa;
+    padding: 0 40px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}

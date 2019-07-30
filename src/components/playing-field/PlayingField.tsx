@@ -17,6 +17,7 @@ export default class PlayingField extends React.Component<Props, State> {
     }
 
     render() {
+
         return (
             <div className="PlayingField">
                 {
@@ -25,7 +26,7 @@ export default class PlayingField extends React.Component<Props, State> {
                             <div className="PlayingField__row" key={row[0].y}>
                                 {
                                     row.map(c => 
-                                        <PlayingFieldCell cell={c} key={c.x} select={this.selectCell}/>
+                                        <PlayingFieldCell cell={c} key={`${c.y}${c.x}`} select={this.selectCell}/>
                                     )
                                 }
                             </div>

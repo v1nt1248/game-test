@@ -7,6 +7,7 @@ import { CommandsType } from './services/websocket.service';
 import { getCommandsType, preparePlayingField } from './helpers';
 import GameSelector from './components/game-selector/GameSelector';
 import PlayingField from './components/playing-field/PlayingField';
+import GameTimer from './components/game-timer/GameTimer';
 
 export interface PlayingFieldValue {
   value: string;
@@ -16,13 +17,15 @@ export interface PlayingFieldValue {
 interface Props {}
 interface State {
     gameLevel: string;
-    playingField: PlayingFieldValue[][],
+    playingField: PlayingFieldValue[][];
+    toggleTimer: boolean;
 }
 
 export default class App extends React.Component<Props, State> {
     state: State = {
         gameLevel: '1',
         playingField: [],
+        toggleTimer: false,
     };
     private unsubscribe$: Subject<void> = new Subject();
 
@@ -31,13 +34,16 @@ export default class App extends React.Component<Props, State> {
         WebSocketSrv.message$
             .pipe(takeUntil(this.unsubscribe$))
             .subscribe(event => {
-              // console.log(event);
                 if (getCommandsType(event.data) === CommandsType.map) {
                     const map = preparePlayingField(event.data.slice(5, -1));
-                    // console.log('Получены данные: ', map);
                     this.setState({
                       playingField: map,
                     });
+                    if (event.data.includes('*')) {
+                      this.setState({
+                        toggleTimer: false,
+                      });
+                    }
                 }
             });
     }
@@ -67,6 +73,11 @@ export default class App extends React.Component<Props, State> {
     }
 
     private selectCell = (cell: PlayingFieldValue): void => {
+      if (!this.state.toggleTimer) {
+        this.setState({
+          toggleTimer: true,
+        });
+      }
       WebSocketSrv.sendCommand(CommandsType.open, `${cell.x} ${cell.y}`)
       WebSocketSrv.sendCommand(CommandsType.map);
     }
@@ -79,6 +90,7 @@ export default class App extends React.Component<Props, State> {
                 <button type="button" className="App__btn" onClick={this.startNewGame}>
                   Начать заново
                 </button>
+                <GameTimer toggle={this.state.toggleTimer} />
               </div>
               <div className="App__playingField">
                 <PlayingField playingField={this.state.playingField} select={this.selectCell} />
