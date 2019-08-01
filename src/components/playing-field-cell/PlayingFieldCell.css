@@ -16,6 +16,7 @@
     font-weight: bold;
     line-height: 1;
     cursor: pointer;
+    user-select: none;
 }
 
 .is-opened {
@@ -29,7 +30,11 @@
     animation: wow 4s ease-in-out;
     animation-iteration-count: 2;
 }
-
+.mod-flag {
+    font-size: 8px;
+    background-color: #ffffff;
+    box-shadow: 1px 1px 2px rgba(154, 147, 140, 0.5), 1px 1px 2px rgba(255, 255, 255, 1);
+}
 .mod-color-1 {
     color: #021aff;
 }

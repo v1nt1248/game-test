@@ -1,5 +1,21 @@
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Игра "Сапер"
+| | |
+| ----------- | ----------- |
+| Уровень сложности | Размер поля |
+| 1   | 10 x 10 |
+| 2   | 40 x 20 |
+| 3   | 100 x 50 |
+| 4   | 500 x 50 |
+
+| | |
+| ----------- | ----------- |
+| Управление | Описание |
+| одиночный клик   | Пометка ячейки поля что присутствует бомба |
+| двойной клик   | Открытие ячейки поля |
+
+
 ## Available Scripts
 
 In the project directory, you can run:
