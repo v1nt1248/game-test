@@ -3,7 +3,7 @@ import './PlayingFieldCanvas.css';
 import { PlayingFieldValue } from '../../App';
 
 interface Props {
-    parentElement: ClientRect|undefined;
+    // parentElement: ClientRect|undefined;
     playingField: PlayingFieldValue[][];
     select?: (item: PlayingFieldValue) => void;
 }
@@ -35,25 +35,13 @@ export default class PlayingFieldCanvas extends React.Component<Props, State> {
     render() {
         const cW = this.props.playingField[0].length * 16;
         const cH = this.props.playingField.length * 16;
-        const grid = this.createGrid(cW, cH);
         return (
-            <div
-                ref='canvas-wrapper'
-                className="PlayingFieldCanvas"
-                style={{
-                    'width': cW,
-                    'height': cH,
-                    'backgroundImage': 'url(' + grid + ')',
-                }}
-            >
-                <canvas
-                    style={{'position': 'absolute', top: 0, left: 0,'backgroundColor': '#fafafa'}}
-                    ref='canvas'
-                    width={cW}
-                    height={cH}
-                    onClick={this.handleCanvasClick}
-                ></canvas>
-            </div>
+            <canvas
+                ref='canvas'
+                width={cW}
+                height={cH}
+                onClick={this.handleCanvasClick}
+            ></canvas>
         );
     }
 }

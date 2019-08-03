@@ -6,7 +6,8 @@ import { WebSocketSrv } from './services';
 import { CommandsType } from './services/websocket.service';
 import { getCommandsType, preparePlayingField } from './helpers';
 import GameSelector from './components/game-selector/GameSelector';
-import PlayingField from './components/playing-field/PlayingField';
+// import PlayingField from './components/playing-field/PlayingField';
+import PlayingFieldCanvas from './components/playing-field-canvas/PlayingFieldCanvas';
 import GameTimer from './components/game-timer/GameTimer';
 
 export interface PlayingFieldValue {
@@ -36,6 +37,7 @@ export default class App extends React.Component<Props, State> {
             .subscribe(event => {
                 if (getCommandsType(event.data) === CommandsType.map) {
                     const map = preparePlayingField(event.data.slice(5, -1));
+                    console.log('Map: ', map);
                     this.setState({
                       playingField: map,
                     });
@@ -93,7 +95,11 @@ export default class App extends React.Component<Props, State> {
                 <GameTimer toggle={this.state.toggleTimer} />
               </div>
               <div className="App__playingField">
-                <PlayingField playingField={this.state.playingField} select={this.selectCell} />
+                <p>{ JSON.stringify(this.state.playingField) }</p>
+                {/* <PlayingField playingField={this.state.playingField} select={this.selectCell} /> */}
+                { this.state.playingField && this.state.playingField.length &&
+                  <PlayingFieldCanvas playingField={this.state.playingField} />
+                }
               </div>
             </div>
         );
