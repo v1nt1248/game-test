@@ -102,7 +102,6 @@ export default class App extends React.Component<Props, State> {
                 <GameTimer toggle={this.state.toggleTimer} />
               </div>
               <div className="App__playingField">
-                <p>{ JSON.stringify(this.state.playingField) }</p>
                 {/* <PlayingField playingField={this.state.playingField} select={this.selectCell} /> */}
                 { this.state.playingField && this.state.playingField.length &&
                   <PlayingFieldCanvas playingField={this.state.playingField} />
