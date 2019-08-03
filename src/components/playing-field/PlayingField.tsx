@@ -1,18 +1,18 @@
 import React from 'react';
 import './PlayingField.css';
-import { PlayingFieldValue } from '../../App';
+import { PlayingFieldCoords } from '../../typing';
 import PlayingFieldCell from '../playing-field-cell/PlayingFieldCell';
 
 interface Props {
-    playingField: PlayingFieldValue[][];
-    select?: (item: PlayingFieldValue) => void;
+    playingField: string[][];
+    select?: (coords: PlayingFieldCoords) => void;
 }
 interface State {}
 
 export default class PlayingField extends React.Component<Props, State> {
-    private selectCell = (cell: PlayingFieldValue): void => {
+    private selectCell = (coords: PlayingFieldCoords): void => {
         if (this.props.select) {
-            this.props.select(cell);
+            this.props.select(coords);
         }
     }
 
@@ -22,11 +22,15 @@ export default class PlayingField extends React.Component<Props, State> {
             <div className="PlayingField">
                 {
                     this.props.playingField
-                        .map(row => 
-                            <div className="PlayingField__row" key={row[0].y}>
+                        .map((row, rowIndex) => 
+                            <div className="PlayingField__row" key={rowIndex}>
                                 {
-                                    row.map(c => 
-                                        <PlayingFieldCell cell={c} key={`${c.y}${c.x}`} select={this.selectCell}/>
+                                    row.map((c, cellIndex) => 
+                                        <PlayingFieldCell
+                                            cell={{value: c, x: cellIndex, y: rowIndex}}
+                                            key={`${rowIndex}${cellIndex}`}
+                                            select={() => this.selectCell({x: cellIndex, y: rowIndex})}
+                                        />
                                     )
                                 }
                             </div>

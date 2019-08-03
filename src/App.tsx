@@ -2,23 +2,19 @@ import React from 'react';
 import './App.css';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { WebSocketSrv } from './services';
+import { StoreSrv, WebSocketSrv } from './services';
 import { CommandsType } from './services/websocket.service';
 import { getCommandsType, preparePlayingField } from './helpers';
 import GameSelector from './components/game-selector/GameSelector';
 // import PlayingField from './components/playing-field/PlayingField';
 import PlayingFieldCanvas from './components/playing-field-canvas/PlayingFieldCanvas';
 import GameTimer from './components/game-timer/GameTimer';
+import { PlayingFieldCoords } from './typing';
 
-export interface PlayingFieldValue {
-  value: string;
-  x: number;
-  y: number;
-}
 interface Props {}
 interface State {
     gameLevel: string;
-    playingField: PlayingFieldValue[][];
+    playingField: string[][];
     toggleTimer: boolean;
 }
 
@@ -31,15 +27,17 @@ export default class App extends React.Component<Props, State> {
     private unsubscribe$: Subject<void> = new Subject();
 
     componentWillMount() {
-        this.initialization();
+        // WebSocketSrv.sendCommand(CommandsType.help);
+        this.startNewGame();
         WebSocketSrv.message$
             .pipe(takeUntil(this.unsubscribe$))
             .subscribe(event => {
                 if (getCommandsType(event.data) === CommandsType.map) {
                     const map = preparePlayingField(event.data.slice(5, -1));
-                    console.log('Map: ', map);
+                    const mapWithNotes = StoreSrv.refreshGameMap(map);
+                    console.log('Map: ', mapWithNotes);
                     this.setState({
-                      playingField: map,
+                      playingField: mapWithNotes,
                     });
                     if (event.data.includes('*')) {
                       this.setState({
@@ -48,6 +46,21 @@ export default class App extends React.Component<Props, State> {
                     }
                 }
             });
+
+        StoreSrv.change$
+            .pipe(takeUntil(this.unsubscribe$))
+            .subscribe(data => {
+                const map = this.state.playingField;
+                const flagCoordsArray = data.coords.split(':');
+                const flagCoords = {
+                    x: Number(flagCoordsArray[1]),
+                    y: Number(flagCoordsArray[0]),
+                };
+                map[flagCoords.y][flagCoords.x] = data.value ? '💣' : '';
+                this.setState({
+                    playingField: map,
+                });
+            });
     }
 
     componentWillUnmount() {
@@ -55,33 +68,27 @@ export default class App extends React.Component<Props, State> {
         this.unsubscribe$.complete();
     }
 
-    private initialization(): void {
-        // WebSocketSrv.sendCommand(CommandsType.help);
+    private startNewGame = (): void => {
+        StoreSrv.clearStore();
         WebSocketSrv.sendCommand(CommandsType.new, this.state.gameLevel);
         WebSocketSrv.sendCommand(CommandsType.map);
     }
 
-    private startNewGame = (): void => {
-      WebSocketSrv.sendCommand(CommandsType.new, this.state.gameLevel);
-      WebSocketSrv.sendCommand(CommandsType.map);
-    }
-
     private onLevelChange = (level: string): void => {
-      this.setState({
-        gameLevel: level,
-      });
-      WebSocketSrv.sendCommand(CommandsType.new, level);
-      WebSocketSrv.sendCommand(CommandsType.map);
+        this.setState({
+            gameLevel: level,
+        });
+        this.startNewGame();
     }
 
-    private selectCell = (cell: PlayingFieldValue): void => {
-      if (!this.state.toggleTimer) {
-        this.setState({
-          toggleTimer: true,
-        });
-      }
-      WebSocketSrv.sendCommand(CommandsType.open, `${cell.x} ${cell.y}`)
-      WebSocketSrv.sendCommand(CommandsType.map);
+    private selectCell = (coords: PlayingFieldCoords): void => {
+        if (!this.state.toggleTimer) {
+            this.setState({
+            toggleTimer: true,
+            });
+        }
+        WebSocketSrv.sendCommand(CommandsType.open, `${coords.x} ${coords.y}`)
+        WebSocketSrv.sendCommand(CommandsType.map);
     }
 
     render() {
@@ -90,7 +97,7 @@ export default class App extends React.Component<Props, State> {
               <div className="App__toolbar">
                 <GameSelector level={this.state.gameLevel} levelChange={this.onLevelChange}/>
                 <button type="button" className="App__btn" onClick={this.startNewGame}>
-                  Начать заново
+                    Начать заново
                 </button>
                 <GameTimer toggle={this.state.toggleTimer} />
               </div>
