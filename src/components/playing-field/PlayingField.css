@@ -1,6 +1,7 @@
 .PlayingField {
     position: relative;
     box-sizing: border-box;
+    transform: translateZ(0);
 }
 
 .PlayingField__row {
