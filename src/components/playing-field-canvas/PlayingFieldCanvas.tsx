@@ -1,10 +1,10 @@
 import React from 'react';
 import './PlayingFieldCanvas.css';
-import { PlayingFieldValue } from '../../App';
+import { PlayingFieldValue } from '../../typing';
 
 interface Props {
     // parentElement: ClientRect|undefined;
-    playingField: PlayingFieldValue[][];
+    playingField: string[][];
     select?: (item: PlayingFieldValue) => void;
 }
 interface State {}
@@ -38,6 +38,7 @@ export default class PlayingFieldCanvas extends React.Component<Props, State> {
         return (
             <canvas
                 ref='canvas'
+                style={{'backgroundColor': '#ffffff'}}
                 width={cW}
                 height={cH}
                 onClick={this.handleCanvasClick}
