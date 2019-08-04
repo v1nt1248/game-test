@@ -1,48 +1,91 @@
 import React from 'react';
 import './PlayingFieldCanvas.css';
 import { PlayingFieldValue } from '../../typing';
+import { getAllIcons } from '../../services';
 
 interface Props {
     // parentElement: ClientRect|undefined;
     playingField: string[][];
     select?: (item: PlayingFieldValue) => void;
 }
-interface State {}
+interface State {
+    allIcons: Record<string, HTMLImageElement>;
+    canvasContext: CanvasRenderingContext2D|null;
+}
 
 export default class PlayingFieldCanvas extends React.Component<Props, State> {
+    constructor(props: Props) {
+        super(props);
+        this.state = {
+            allIcons: {},
+            canvasContext: null,
+        };
+        this.initializationIcons();
+    }
+
+    private async initializationIcons(): Promise<void> {
+        const icons = await getAllIcons();
+        this.setState({
+            allIcons: icons,
+        });
+    }
+
+    private getCanvasContext = (canvas: HTMLCanvasElement): void => {
+        if (canvas && !this.state.canvasContext) {
+            const canvasContext = canvas.getContext('2d') as CanvasRenderingContext2D;
+            this.setState({
+                canvasContext,
+            });
+            console.log(canvasContext);
+        }
+    }
+    
     private handleCanvasClick = (e: any): void => {
         e.persist();
         console.log(e, e.clientX, e.clientY);
     }
 
-    private createGrid(cW: number, cH: number): string {
-        const cnv = document.createElement('canvas');
-        cnv.width = cW;
-        cnv.height = cH;
-        const ctx = cnv.getContext('2d');
-        ctx!.strokeStyle = 'blue';
-        for (let x = -0.5; x < (cW - 1); x += 16) {
-            console.log('X: ', x);
-            ctx!.strokeRect(x, 0, 0.1, (cH - 1));
-        }
-        for (let y = -0.5; y < (cH - 1); y += 16) {
-            console.log('Y: ', y);
-            ctx!.strokeRect(0, y, (cW - 1), 0.1);
-        }
-        return cnv.toDataURL();
-    }
-
     render() {
         const cW = this.props.playingField[0].length * 16;
         const cH = this.props.playingField.length * 16;
+        if (
+            Object.keys(this.state.allIcons).length === 8 &&
+            !!this.state.canvasContext
+        ) {
+            this.state.canvasContext.clearRect(0, 0, cW, cH);
+            this.props.playingField
+                .forEach((row, y) => {
+                    row.forEach((cell, x) => {
+                        let image!: HTMLImageElement;
+                        switch (cell) {
+                            case '':
+                                image = this.state.allIcons.default;
+                                break;
+                            case '💣':
+                                image = this.state.allIcons.bomb;
+                                break;
+                            case '0':
+                                image = this.state.allIcons.o0;
+                                break;
+                        }
+                        this.state.canvasContext!.drawImage(image, x * 16, y * 16);
+                    });
+                });
+        }
         return (
-            <canvas
-                ref='canvas'
-                style={{'backgroundColor': '#ffffff'}}
-                width={cW}
-                height={cH}
-                onClick={this.handleCanvasClick}
-            ></canvas>
+            <div style={{position: 'relative'}}>
+                {
+                    Object.keys(this.state.allIcons).length === 8 &&
+                    <canvas
+                        ref={(c) => this.getCanvasContext(c as HTMLCanvasElement)}
+                        style={{'backgroundColor': '#ffffff'}}
+                        width={cW}
+                        height={cH}
+                        onClick={this.handleCanvasClick}
+                    />
+                }
+                
+            </div>
         );
     }
 }
