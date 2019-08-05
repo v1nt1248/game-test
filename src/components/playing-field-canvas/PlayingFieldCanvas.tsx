@@ -1,26 +1,36 @@
-import React from 'react';
+import React, { RefObject } from 'react';
 import './PlayingFieldCanvas.css';
 import { PlayingFieldValue } from '../../typing';
 import { getAllIcons } from '../../services';
 
 interface Props {
-    // parentElement: ClientRect|undefined;
+    parentElement: HTMLElement;
     playingField: string[][];
     select?: (item: PlayingFieldValue) => void;
 }
 interface State {
     allIcons: Record<string, HTMLImageElement>;
-    canvasContext: CanvasRenderingContext2D|null;
 }
 
 export default class PlayingFieldCanvas extends React.Component<Props, State> {
+    private divRef!: RefObject<HTMLDivElement>;
+    private divTopLeftCoords!: ClientRect;
+    private canvasRef!: RefObject<HTMLCanvasElement>;
+    private canvasContext!: CanvasRenderingContext2D|null;
+
     constructor(props: Props) {
         super(props);
+        this.divRef = React.createRef();
+        this.canvasRef = React.createRef();
         this.state = {
             allIcons: {},
-            canvasContext: null,
         };
         this.initializationIcons();
+    }
+
+    public componentDidMount(): void {
+        this.divTopLeftCoords = this.divRef.current!.getBoundingClientRect();
+        this.canvasContext = this.canvasRef.current!.getContext('2d');
     }
 
     private async initializationIcons(): Promise<void> {
@@ -29,30 +39,28 @@ export default class PlayingFieldCanvas extends React.Component<Props, State> {
             allIcons: icons,
         });
     }
-
-    private getCanvasContext = (canvas: HTMLCanvasElement): void => {
-        if (canvas && !this.state.canvasContext) {
-            const canvasContext = canvas.getContext('2d') as CanvasRenderingContext2D;
-            this.setState({
-                canvasContext,
-            });
-            console.log(canvasContext);
-        }
-    }
     
     private handleCanvasClick = (e: any): void => {
         e.persist();
-        console.log(e, e.clientX, e.clientY);
+        const newClientX = e.clientX - this.divTopLeftCoords.left;
+        const newClientY = e.clientY - this.divTopLeftCoords.top;
+        const x = Math.trunc((newClientX + this.props.parentElement.scrollLeft)/ 16);
+        const y = Math.trunc(newClientY / 16);
+        if (this.props.select) {
+            this.props.select({x, y, value: ''});
+        }
     }
 
     render() {
+        console.log('Into: ', this.props.playingField, this.state.allIcons);
         const cW = this.props.playingField[0].length * 16;
         const cH = this.props.playingField.length * 16;
-        if (
-            Object.keys(this.state.allIcons).length === 8 &&
-            !!this.state.canvasContext
-        ) {
-            this.state.canvasContext.clearRect(0, 0, cW, cH);
+        if (this.canvasRef && this.canvasRef.current) {
+            this.canvasRef.current!.width = cW;
+            this.canvasRef.current!.height = cH;
+        }
+        if (Object.keys(this.state.allIcons).length === 8) {
+            this.canvasContext!.clearRect(0, 0, cW, cH);
             this.props.playingField
                 .forEach((row, y) => {
                     row.forEach((cell, x) => {
@@ -61,50 +69,36 @@ export default class PlayingFieldCanvas extends React.Component<Props, State> {
                             case '':
                                 image = this.state.allIcons.default;
                                 break;
-                            case '💣':
+                            case '*':
                                 image = this.state.allIcons.bomb;
                                 break;
                             case '0':
                                 image = this.state.allIcons.o0;
                                 break;
+                            case '1':
+                                image = this.state.allIcons.o1;
+                                break;
+                            case '2':
+                                image = this.state.allIcons.o2;
+                                break;
+                            case '3':
+                                image = this.state.allIcons.o3;
+                                break;
+                            case '4':
+                                image = this.state.allIcons.o4;
+                                break;
                         }
-                        this.state.canvasContext!.drawImage(image, x * 16, y * 16);
+                        this.canvasContext!.drawImage(image, x * 16, y * 16);
                     });
                 });
         }
         return (
-            <div style={{position: 'relative'}}>
-                {
-                    Object.keys(this.state.allIcons).length === 8 &&
-                    <canvas
-                        ref={(c) => this.getCanvasContext(c as HTMLCanvasElement)}
-                        style={{'backgroundColor': '#ffffff'}}
-                        width={cW}
-                        height={cH}
-                        onClick={this.handleCanvasClick}
-                    />
-                }
-                
+            <div ref={this.divRef} style={{position: 'relative'}}>
+                <canvas
+                    ref={this.canvasRef}
+                    onClick={this.handleCanvasClick}
+                />
             </div>
         );
     }
 }
-
-/*
-function getCoords(elem: Element): {top: number, left: number} {
-    const box = elem.getBoundingClientRect();
-    const body = document.body;
-    const docEl = document.documentElement;
-
-    const scrollTop = window.pageYOffset || docEl.scrollTop || body.scrollTop;
-    const scrollLeft = window.pageXOffset || docEl.scrollLeft || body.scrollLeft;
-
-    const clientTop = docEl.clientTop || body.clientTop || 0;
-    const clientLeft = docEl.clientLeft || body.clientLeft || 0;
-
-    const top = box.top + scrollTop - clientTop;
-    const left = box.left + scrollLeft - clientLeft;
-
-    return {top, left};
-}
-*/

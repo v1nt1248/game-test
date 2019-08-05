@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { RefObject } from 'react';
 import './App.css';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { StoreSrv, WebSocketSrv } from './services';
 import { CommandsType } from './services/websocket.service';
-import { getCommandsType, preparePlayingField } from './helpers';
+import { getCommandsType, preparePlayingField, getPlayingFieldChanges } from './helpers';
 import GameSelector from './components/game-selector/GameSelector';
 // import PlayingField from './components/playing-field/PlayingField';
 import PlayingFieldCanvas from './components/playing-field-canvas/PlayingFieldCanvas';
@@ -15,6 +15,7 @@ interface Props {}
 interface State {
     gameLevel: string;
     playingField: string[][];
+    playingFieldChanges: {x: number; y: number}[];
     toggleTimer: boolean;
 }
 
@@ -22,18 +23,31 @@ export default class App extends React.Component<Props, State> {
     state: State = {
         gameLevel: '1',
         playingField: [],
+        playingFieldChanges: [],
         toggleTimer: false,
     };
+    private playingFieldWrapperRef!: RefObject<HTMLDivElement>;
+    private playingFieldAsString: string = '';
     private unsubscribe$: Subject<void> = new Subject();
 
-    componentWillMount() {
+    constructor(props: Props) {
+        super(props);
+        this.playingFieldWrapperRef = React.createRef();
+    }
+
+    componentWillMount(): void {
         // WebSocketSrv.sendCommand(CommandsType.help);
         this.startNewGame();
         WebSocketSrv.message$
             .pipe(takeUntil(this.unsubscribe$))
             .subscribe(event => {
                 if (getCommandsType(event.data) === CommandsType.map) {
-                    const map = preparePlayingField(event.data.slice(5, -1));
+                    if (this.playingFieldAsString) {
+                        const diff = getPlayingFieldChanges(this.playingFieldAsString, event.data.slice(5, -1));
+                        console.log(diff);
+                    }
+                    this.playingFieldAsString = event.data.slice(5, -1);
+                    const map = preparePlayingField(this.playingFieldAsString);
                     const mapWithNotes = StoreSrv.refreshGameMap(map);
                     console.log('Map: ', mapWithNotes);
                     this.setState({
@@ -63,28 +77,33 @@ export default class App extends React.Component<Props, State> {
             });
     }
 
-    componentWillUnmount() {
+    componentWillUnmount(): void {
         this.unsubscribe$.next();
         this.unsubscribe$.complete();
     }
 
-    private startNewGame = (): void => {
+    private startNewGame = (level?: string): void => {
+        this.playingFieldAsString = '';
+        this.setState({
+            playingFieldChanges: [],
+        });
         StoreSrv.clearStore();
-        WebSocketSrv.sendCommand(CommandsType.new, this.state.gameLevel);
+        WebSocketSrv.sendCommand(CommandsType.new, level || this.state.gameLevel);
         WebSocketSrv.sendCommand(CommandsType.map);
     }
 
     private onLevelChange = (level: string): void => {
+        console.log('Level changed: ', level);
         this.setState({
             gameLevel: level,
         });
-        this.startNewGame();
+        this.startNewGame(level);
     }
 
     private selectCell = (coords: PlayingFieldCoords): void => {
         if (!this.state.toggleTimer) {
             this.setState({
-            toggleTimer: true,
+                toggleTimer: true,
             });
         }
         WebSocketSrv.sendCommand(CommandsType.open, `${coords.x} ${coords.y}`)
@@ -96,15 +115,18 @@ export default class App extends React.Component<Props, State> {
             <div className="App">
               <div className="App__toolbar">
                 <GameSelector level={this.state.gameLevel} levelChange={this.onLevelChange}/>
-                <button type="button" className="App__btn" onClick={this.startNewGame}>
+                <button type="button" className="App__btn" onClick={() => this.startNewGame()}>
                     Начать заново
                 </button>
                 <GameTimer toggle={this.state.toggleTimer} />
               </div>
-              <div className="App__playingField">
-                {/* <PlayingField playingField={this.state.playingField} select={this.selectCell} /> */}
+              <div className="App__playingField" ref={this.playingFieldWrapperRef}>
                 { this.state.playingField && this.state.playingField.length &&
-                  <PlayingFieldCanvas playingField={this.state.playingField} />
+                    <PlayingFieldCanvas
+                        parentElement={this.playingFieldWrapperRef.current as HTMLDivElement}
+                        playingField={this.state.playingField}
+                        select={this.selectCell}
+                    />
                 }
               </div>
             </div>
