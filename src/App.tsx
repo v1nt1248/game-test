@@ -9,13 +9,13 @@ import GameSelector from './components/game-selector/GameSelector';
 // import PlayingField from './components/playing-field/PlayingField';
 import PlayingFieldCanvas from './components/playing-field-canvas/PlayingFieldCanvas';
 import GameTimer from './components/game-timer/GameTimer';
-import { PlayingFieldCoords } from './typing';
+import { PlayingFieldCoords, PlayingFieldValue } from './typing';
 
 interface Props {}
 interface State {
     gameLevel: string;
     playingField: string[][];
-    playingFieldChanges: {x: number; y: number}[];
+    playingFieldChanges: PlayingFieldValue[];
     toggleTimer: boolean;
 }
 
@@ -44,15 +44,19 @@ export default class App extends React.Component<Props, State> {
                 if (getCommandsType(event.data) === CommandsType.map) {
                     if (this.playingFieldAsString) {
                         const diff = getPlayingFieldChanges(this.playingFieldAsString, event.data.slice(5, -1));
-                        console.log(diff);
+                        this.setState({
+                            playingFieldChanges: diff,
+                        });
+                    } else {
+                        this.playingFieldAsString = event.data.slice(5, -1);
+                        const map = preparePlayingField(this.playingFieldAsString);
+                        const mapWithNotes = StoreSrv.refreshGameMap(map);
+                        console.log('Map: ', mapWithNotes);
+                        this.setState({
+                        playingField: mapWithNotes,
+                        });
                     }
-                    this.playingFieldAsString = event.data.slice(5, -1);
-                    const map = preparePlayingField(this.playingFieldAsString);
-                    const mapWithNotes = StoreSrv.refreshGameMap(map);
-                    console.log('Map: ', mapWithNotes);
-                    this.setState({
-                      playingField: mapWithNotes,
-                    });
+
                     if (event.data.includes('*')) {
                       this.setState({
                         toggleTimer: false,
@@ -93,7 +97,6 @@ export default class App extends React.Component<Props, State> {
     }
 
     private onLevelChange = (level: string): void => {
-        console.log('Level changed: ', level);
         this.setState({
             gameLevel: level,
         });
@@ -123,8 +126,9 @@ export default class App extends React.Component<Props, State> {
               <div className="App__playingField" ref={this.playingFieldWrapperRef}>
                 { this.state.playingField && this.state.playingField.length &&
                     <PlayingFieldCanvas
-                        parentElement={this.playingFieldWrapperRef.current as HTMLDivElement}
+                        parentElement={this.playingFieldWrapperRef.current as HTMLElement}
                         playingField={this.state.playingField}
+                        playingFieldChanges={this.state.playingFieldChanges}
                         select={this.selectCell}
                     />
                 }

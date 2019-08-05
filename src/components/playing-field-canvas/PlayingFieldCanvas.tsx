@@ -6,6 +6,7 @@ import { getAllIcons } from '../../services';
 interface Props {
     parentElement: HTMLElement;
     playingField: string[][];
+    playingFieldChanges: PlayingFieldValue[];
     select?: (item: PlayingFieldValue) => void;
 }
 interface State {
@@ -52,7 +53,7 @@ export default class PlayingFieldCanvas extends React.Component<Props, State> {
     }
 
     render() {
-        console.log('Into: ', this.props.playingField, this.state.allIcons);
+        console.log('Into: ', this.props.playingFieldChanges);
         const cW = this.props.playingField[0].length * 16;
         const cH = this.props.playingField.length * 16;
         if (this.canvasRef && this.canvasRef.current) {
@@ -60,37 +61,46 @@ export default class PlayingFieldCanvas extends React.Component<Props, State> {
             this.canvasRef.current!.height = cH;
         }
         if (Object.keys(this.state.allIcons).length === 8) {
-            this.canvasContext!.clearRect(0, 0, cW, cH);
-            this.props.playingField
-                .forEach((row, y) => {
-                    row.forEach((cell, x) => {
-                        let image!: HTMLImageElement;
-                        switch (cell) {
-                            case '':
-                                image = this.state.allIcons.default;
-                                break;
+            if (!this.props.playingFieldChanges.length) {
+                this.canvasContext!.clearRect(0, 0, cW, cH);
+                const icon = this.state.allIcons.default;
+                this.props.playingField
+                    .forEach((row, y) => {
+                        row.forEach((cell, x) => {
+                            this.canvasContext!.drawImage(icon, x * 16, y * 16);
+                        })
+                    })
+            } else {
+                this.props.playingFieldChanges
+                    .forEach(item => {
+                        let icon!: HTMLImageElement;
+                        switch (item.value) {
                             case '*':
-                                image = this.state.allIcons.bomb;
+                                icon = this.state.allIcons.bomb;
                                 break;
                             case '0':
-                                image = this.state.allIcons.o0;
+                                icon = this.state.allIcons.o0;
                                 break;
                             case '1':
-                                image = this.state.allIcons.o1;
+                                icon = this.state.allIcons.o1;
                                 break;
                             case '2':
-                                image = this.state.allIcons.o2;
+                                icon = this.state.allIcons.o2;
                                 break;
                             case '3':
-                                image = this.state.allIcons.o3;
+                                icon = this.state.allIcons.o3;
                                 break;
                             case '4':
-                                image = this.state.allIcons.o4;
+                                icon = this.state.allIcons.o4;
                                 break;
                         }
-                        this.canvasContext!.drawImage(image, x * 16, y * 16);
+                        this.canvasContext!.drawImage(
+                            icon,
+                            item.x * 16,
+                            item.y * 16,
+                        );
                     });
-                });
+            }
         }
         return (
             <div ref={this.divRef} style={{position: 'relative'}}>
@@ -98,6 +108,13 @@ export default class PlayingFieldCanvas extends React.Component<Props, State> {
                     ref={this.canvasRef}
                     onClick={this.handleCanvasClick}
                 />
+                <div style={{position: "absolute", top: 0, left: 0, width: '100%', height: '100%'}}>
+                    <canvas
+                        width="100%"
+                        height="100%"
+                        style={{backgroundColor: '#ffffff'}}
+                    />
+                </div>
             </div>
         );
     }

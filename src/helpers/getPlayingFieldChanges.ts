@@ -1,4 +1,6 @@
-export function getPlayingFieldChanges(oldValue: string, newValue: string): {x: number; y: number}[] {
+import { PlayingFieldValue } from "../typing";
+
+export function getPlayingFieldChanges(oldValue: string, newValue: string): PlayingFieldValue[] {
     const oldValueParsed = JSON.stringify(oldValue).replace(/\\n/g, ':').split(':');
     oldValueParsed[0] = oldValueParsed[0].slice(1);
     oldValueParsed[oldValueParsed.length - 1] = oldValueParsed[oldValueParsed.length - 1].slice(0, -1);
@@ -17,7 +19,7 @@ export function getPlayingFieldChanges(oldValue: string, newValue: string): {x: 
         }
         for (let xIndex = 0; xIndex < newValueParsed[yIndex].length; xIndex++) {
             if (newValueParsed[yIndex][xIndex] !== yValueOld[xIndex]) {
-                res.push({x: xIndex, y: yIndex});
+                res.push({x: xIndex, y: yIndex, value: newValueParsed[yIndex][xIndex]});
             }
         }
     }
