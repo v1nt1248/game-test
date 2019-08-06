@@ -1,42 +1,59 @@
-import React from 'react';
+import React, { RefObject } from 'react';
 import './App.css';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { StoreSrv, WebSocketSrv } from './services';
+import { WebSocketSrv } from './services';
 import { CommandsType } from './services/websocket.service';
-import { getCommandsType, preparePlayingField } from './helpers';
+import { getCommandsType, getPlayingFieldChanges, getPlayingFieldSize } from './helpers';
 import GameSelector from './components/game-selector/GameSelector';
-import PlayingField from './components/playing-field/PlayingField';
+import PlayingFieldCanvas from './components/playing-field-canvas/PlayingFieldCanvas';
 import GameTimer from './components/game-timer/GameTimer';
-import { PlayingFieldCoords } from './typing';
+import { PlayingFieldCoords, PlayingFieldValue } from './typing';
 
 interface Props {}
 interface State {
     gameLevel: string;
-    playingField: string[][];
+    playingFieldSize: {width: number; height: number} | null;
+    playingFieldChanges: PlayingFieldValue[] | null;
     toggleTimer: boolean;
 }
 
 export default class App extends React.Component<Props, State> {
     state: State = {
         gameLevel: '1',
-        playingField: [],
+        playingFieldSize: null,
+        playingFieldChanges: null,
         toggleTimer: false,
     };
+    private playingFieldWrapperRef!: RefObject<HTMLDivElement>;
+    private playingFieldAsString: string = '';
     private unsubscribe$: Subject<void> = new Subject();
 
-    componentWillMount() {
+    constructor(props: Props) {
+        super(props);
+        this.playingFieldWrapperRef = React.createRef();
+    }
+
+    componentWillMount(): void {
         // WebSocketSrv.sendCommand(CommandsType.help);
         this.startNewGame();
         WebSocketSrv.message$
             .pipe(takeUntil(this.unsubscribe$))
             .subscribe(event => {
                 if (getCommandsType(event.data) === CommandsType.map) {
-                    const map = preparePlayingField(event.data.slice(5, -1));
-                    const mapWithNotes = StoreSrv.refreshGameMap(map);
-                    this.setState({
-                      playingField: mapWithNotes,
-                    });
+                    if (this.playingFieldAsString) {
+                        const diff = getPlayingFieldChanges(this.playingFieldAsString, event.data.slice(5, -1));
+                        this.setState({
+                            playingFieldChanges: diff,
+                        });
+                    } else {
+                        this.setState({
+                            playingFieldSize: getPlayingFieldSize(event.data.slice(5, -1)),
+                            playingFieldChanges: [],
+                        });
+                    }
+                    this.playingFieldAsString = event.data.slice(5, -1);
+
                     if (event.data.includes('*')) {
                       this.setState({
                         toggleTimer: false,
@@ -44,31 +61,20 @@ export default class App extends React.Component<Props, State> {
                     }
                 }
             });
-
-        StoreSrv.change$
-            .pipe(takeUntil(this.unsubscribe$))
-            .subscribe(data => {
-                const map = this.state.playingField;
-                const flagCoordsArray = data.coords.split(':');
-                const flagCoords = {
-                    x: Number(flagCoordsArray[1]),
-                    y: Number(flagCoordsArray[0]),
-                };
-                map[flagCoords.y][flagCoords.x] = data.value ? '💣' : '';
-                this.setState({
-                    playingField: map,
-                });
-            });
     }
 
-    componentWillUnmount() {
+    componentWillUnmount(): void {
         this.unsubscribe$.next();
         this.unsubscribe$.complete();
     }
 
-    private startNewGame = (): void => {
-        StoreSrv.clearStore();
-        WebSocketSrv.sendCommand(CommandsType.new, this.state.gameLevel);
+    private startNewGame = (level?: string): void => {
+        this.playingFieldAsString = '';
+        this.setState({
+            playingFieldChanges: [],
+            toggleTimer: false,
+        });
+        WebSocketSrv.sendCommand(CommandsType.new, level || this.state.gameLevel);
         WebSocketSrv.sendCommand(CommandsType.map);
     }
 
@@ -76,13 +82,13 @@ export default class App extends React.Component<Props, State> {
         this.setState({
             gameLevel: level,
         });
-        this.startNewGame();
+        this.startNewGame(level);
     }
 
     private selectCell = (coords: PlayingFieldCoords): void => {
         if (!this.state.toggleTimer) {
             this.setState({
-            toggleTimer: true,
+                toggleTimer: true,
             });
         }
         WebSocketSrv.sendCommand(CommandsType.open, `${coords.x} ${coords.y}`)
@@ -100,18 +106,23 @@ export default class App extends React.Component<Props, State> {
                     <button
                         type="button"
                         className="App__btn"
-                        onClick={this.startNewGame}
+                        onClick={() => this.startNewGame()}
                     >
                         Начать заново
                     </button>
                     <GameTimer toggle={this.state.toggleTimer} />
-                </div>
-                <div className="App__playingField">
-                    <PlayingField
-                        playingField={this.state.playingField}
+              </div>
+              <div
+                className="App__playingField"
+                ref={this.playingFieldWrapperRef}
+                >
+                    <PlayingFieldCanvas
+                        parentElement={this.playingFieldWrapperRef.current as HTMLElement}
+                        playingFieldSize={this.state.playingFieldSize}
+                        playingFieldChanges={this.state.playingFieldChanges}
                         select={this.selectCell}
                     />
-                </div>
+              </div>
             </div>
         );
     }
