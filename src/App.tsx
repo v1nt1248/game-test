@@ -93,14 +93,24 @@ export default class App extends React.Component<Props, State> {
         return (
             <div className="App">
                 <div className="App__toolbar">
-                    <GameSelector level={this.state.gameLevel} levelChange={this.onLevelChange}/>
-                    <button type="button" className="App__btn" onClick={this.startNewGame}>
+                    <GameSelector
+                        level={this.state.gameLevel}
+                        levelChange={this.onLevelChange}
+                    />
+                    <button
+                        type="button"
+                        className="App__btn"
+                        onClick={this.startNewGame}
+                    >
                         Начать заново
                     </button>
                     <GameTimer toggle={this.state.toggleTimer} />
                 </div>
                 <div className="App__playingField">
-                    <PlayingField playingField={this.state.playingField} select={this.selectCell} />
+                    <PlayingField
+                        playingField={this.state.playingField}
+                        select={this.selectCell}
+                    />
                 </div>
             </div>
         );
