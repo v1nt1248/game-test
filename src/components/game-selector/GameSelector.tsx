@@ -20,8 +20,15 @@ export default class GameSelector extends React.Component<Props, State> {
     render() {
         return (
             <div className="GameSelector">
-                <h4 className="GameSelector__title">Выберите уровень игры</h4>
-                <select className="GameSelector__select" name='select' value={this.props.level} onChange={this.selectLevel}>
+                <h4 className="GameSelector__title">
+                    Выберите уровень игры
+                </h4>
+                <select
+                    className="GameSelector__select"
+                    name='select'
+                    value={this.props.level}
+                    onChange={this.selectLevel}
+                >
                     {
                         allGameLevel.map(item => 
                             <option value={item} key={item}>
