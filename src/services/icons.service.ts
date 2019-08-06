@@ -7,9 +7,11 @@ const icons: Record<string, string> = {
     o2: 'opened-2.svg',
     o3: 'opened-3.svg',
     o4: 'opened-4.svg',
+    o5: 'opened-5.svg',
+    o6: 'opened-6.svg',
 };
 
-const allIcons = [ 'default', 'mark', 'bomb', 'o0', 'o1', 'o2', 'o3', 'o4'];
+const allIcons = [ 'default', 'mark', 'bomb', 'o0', 'o1', 'o2', 'o3', 'o4', 'o5', 'o6'];
 
 function getIcon(name: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
@@ -36,5 +38,7 @@ export async function getAllIcons(): Promise<Record<string, HTMLImageElement>> {
         o2: icons[5],
         o3: icons[6],
         o4: icons[7],
+        o5: icons[8],
+        o6: icons[9],
     };
 }

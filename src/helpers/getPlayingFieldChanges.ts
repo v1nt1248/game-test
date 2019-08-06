@@ -8,8 +8,6 @@ export function getPlayingFieldChanges(oldValue: string, newValue: string): Play
     const newValueParsed = JSON.stringify(newValue).replace(/\\n/g, ':').split(':');
     newValueParsed[0] = newValueParsed[0].slice(1);
     newValueParsed[oldValueParsed.length - 1] = newValueParsed[oldValueParsed.length - 1].slice(0, -1);
-    
-    console.log('old: ', oldValueParsed, ' new: ', newValueParsed);
 
     const res = [];
     for (let yIndex = 0; yIndex < newValueParsed.length; yIndex++) {

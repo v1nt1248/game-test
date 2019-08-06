@@ -2,7 +2,7 @@ import React, { RefObject } from 'react';
 import './App.css';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { StoreSrv, WebSocketSrv } from './services';
+import { WebSocketSrv } from './services';
 import { CommandsType } from './services/websocket.service';
 import { getCommandsType, getPlayingFieldChanges, getPlayingFieldSize } from './helpers';
 import GameSelector from './components/game-selector/GameSelector';
@@ -61,21 +61,6 @@ export default class App extends React.Component<Props, State> {
                     }
                 }
             });
-
-        // StoreSrv.change$
-        //     .pipe(takeUntil(this.unsubscribe$))
-        //     .subscribe(data => {
-        //         const map = this.state.playingField;
-        //         const flagCoordsArray = data.coords.split(':');
-        //         const flagCoords = {
-        //             x: Number(flagCoordsArray[1]),
-        //             y: Number(flagCoordsArray[0]),
-        //         };
-        //         map[flagCoords.y][flagCoords.x] = data.value ? '💣' : '';
-        //         this.setState({
-        //             playingField: map,
-        //         });
-        //     });
     }
 
     componentWillUnmount(): void {
@@ -87,8 +72,8 @@ export default class App extends React.Component<Props, State> {
         this.playingFieldAsString = '';
         this.setState({
             playingFieldChanges: [],
+            toggleTimer: false,
         });
-        StoreSrv.clearStore();
         WebSocketSrv.sendCommand(CommandsType.new, level || this.state.gameLevel);
         WebSocketSrv.sendCommand(CommandsType.map);
     }
