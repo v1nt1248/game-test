@@ -4,9 +4,8 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { StoreSrv, WebSocketSrv } from './services';
 import { CommandsType } from './services/websocket.service';
-import { getCommandsType, preparePlayingField, getPlayingFieldChanges } from './helpers';
+import { getCommandsType, getPlayingFieldChanges, getPlayingFieldSize } from './helpers';
 import GameSelector from './components/game-selector/GameSelector';
-// import PlayingField from './components/playing-field/PlayingField';
 import PlayingFieldCanvas from './components/playing-field-canvas/PlayingFieldCanvas';
 import GameTimer from './components/game-timer/GameTimer';
 import { PlayingFieldCoords, PlayingFieldValue } from './typing';
@@ -14,16 +13,16 @@ import { PlayingFieldCoords, PlayingFieldValue } from './typing';
 interface Props {}
 interface State {
     gameLevel: string;
-    playingField: string[][];
-    playingFieldChanges: PlayingFieldValue[];
+    playingFieldSize: {width: number; height: number} | null;
+    playingFieldChanges: PlayingFieldValue[] | null;
     toggleTimer: boolean;
 }
 
 export default class App extends React.Component<Props, State> {
     state: State = {
         gameLevel: '1',
-        playingField: [],
-        playingFieldChanges: [],
+        playingFieldSize: null,
+        playingFieldChanges: null,
         toggleTimer: false,
     };
     private playingFieldWrapperRef!: RefObject<HTMLDivElement>;
@@ -48,14 +47,12 @@ export default class App extends React.Component<Props, State> {
                             playingFieldChanges: diff,
                         });
                     } else {
-                        this.playingFieldAsString = event.data.slice(5, -1);
-                        const map = preparePlayingField(this.playingFieldAsString);
-                        const mapWithNotes = StoreSrv.refreshGameMap(map);
-                        console.log('Map: ', mapWithNotes);
                         this.setState({
-                        playingField: mapWithNotes,
+                            playingFieldSize: getPlayingFieldSize(event.data.slice(5, -1)),
+                            playingFieldChanges: [],
                         });
                     }
+                    this.playingFieldAsString = event.data.slice(5, -1);
 
                     if (event.data.includes('*')) {
                       this.setState({
@@ -65,20 +62,20 @@ export default class App extends React.Component<Props, State> {
                 }
             });
 
-        StoreSrv.change$
-            .pipe(takeUntil(this.unsubscribe$))
-            .subscribe(data => {
-                const map = this.state.playingField;
-                const flagCoordsArray = data.coords.split(':');
-                const flagCoords = {
-                    x: Number(flagCoordsArray[1]),
-                    y: Number(flagCoordsArray[0]),
-                };
-                map[flagCoords.y][flagCoords.x] = data.value ? '💣' : '';
-                this.setState({
-                    playingField: map,
-                });
-            });
+        // StoreSrv.change$
+        //     .pipe(takeUntil(this.unsubscribe$))
+        //     .subscribe(data => {
+        //         const map = this.state.playingField;
+        //         const flagCoordsArray = data.coords.split(':');
+        //         const flagCoords = {
+        //             x: Number(flagCoordsArray[1]),
+        //             y: Number(flagCoordsArray[0]),
+        //         };
+        //         map[flagCoords.y][flagCoords.x] = data.value ? '💣' : '';
+        //         this.setState({
+        //             playingField: map,
+        //         });
+        //     });
     }
 
     componentWillUnmount(): void {
@@ -116,22 +113,30 @@ export default class App extends React.Component<Props, State> {
     render() {
         return (
             <div className="App">
-              <div className="App__toolbar">
-                <GameSelector level={this.state.gameLevel} levelChange={this.onLevelChange}/>
-                <button type="button" className="App__btn" onClick={() => this.startNewGame()}>
-                    Начать заново
-                </button>
-                <GameTimer toggle={this.state.toggleTimer} />
+                <div className="App__toolbar">
+                    <GameSelector
+                        level={this.state.gameLevel}
+                        levelChange={this.onLevelChange}
+                    />
+                    <button
+                        type="button"
+                        className="App__btn"
+                        onClick={() => this.startNewGame()}
+                    >
+                        Начать заново
+                    </button>
+                    <GameTimer toggle={this.state.toggleTimer} />
               </div>
-              <div className="App__playingField" ref={this.playingFieldWrapperRef}>
-                { this.state.playingField && this.state.playingField.length &&
+              <div
+                className="App__playingField"
+                ref={this.playingFieldWrapperRef}
+                >
                     <PlayingFieldCanvas
                         parentElement={this.playingFieldWrapperRef.current as HTMLElement}
-                        playingField={this.state.playingField}
+                        playingFieldSize={this.state.playingFieldSize}
                         playingFieldChanges={this.state.playingFieldChanges}
                         select={this.selectCell}
                     />
-                }
               </div>
             </div>
         );

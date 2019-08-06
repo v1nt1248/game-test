@@ -2,11 +2,12 @@ import React, { RefObject } from 'react';
 import './PlayingFieldCanvas.css';
 import { PlayingFieldValue } from '../../typing';
 import { getAllIcons } from '../../services';
+import { FIELD_CELL_SIZE } from '../../constants';
 
 interface Props {
     parentElement: HTMLElement;
-    playingField: string[][];
-    playingFieldChanges: PlayingFieldValue[];
+    playingFieldSize: {width: number; height: number} | null;
+    playingFieldChanges: PlayingFieldValue[] | null;
     select?: (item: PlayingFieldValue) => void;
 }
 interface State {
@@ -18,6 +19,15 @@ export default class PlayingFieldCanvas extends React.Component<Props, State> {
     private divTopLeftCoords!: ClientRect;
     private canvasRef!: RefObject<HTMLCanvasElement>;
     private canvasContext!: CanvasRenderingContext2D|null;
+
+    private get canvasSize(): {width: number, height: number} {
+        return this.props.playingFieldSize
+            ? {
+                width: this.props.playingFieldSize.width * FIELD_CELL_SIZE,
+                height: this.props.playingFieldSize.height * FIELD_CELL_SIZE,
+            }
+            : { width: 0, height: 0 };
+    }
 
     constructor(props: Props) {
         super(props);
@@ -45,33 +55,30 @@ export default class PlayingFieldCanvas extends React.Component<Props, State> {
         e.persist();
         const newClientX = e.clientX - this.divTopLeftCoords.left;
         const newClientY = e.clientY - this.divTopLeftCoords.top;
-        const x = Math.trunc((newClientX + this.props.parentElement.scrollLeft)/ 16);
-        const y = Math.trunc(newClientY / 16);
+        const x = Math.trunc((newClientX + this.props.parentElement.scrollLeft) / FIELD_CELL_SIZE);
+        const y = Math.trunc((newClientY + this.props.parentElement.scrollTop) / FIELD_CELL_SIZE);
+        console.log('x: ', x, ' y: ', y);
         if (this.props.select) {
             this.props.select({x, y, value: ''});
         }
     }
 
     render() {
-        console.log('Into: ', this.props.playingFieldChanges);
-        const cW = this.props.playingField[0].length * 16;
-        const cH = this.props.playingField.length * 16;
         if (this.canvasRef && this.canvasRef.current) {
-            this.canvasRef.current!.width = cW;
-            this.canvasRef.current!.height = cH;
+            this.canvasRef.current!.width = this.canvasSize.width;
+            this.canvasRef.current!.height = this.canvasSize.height;
         }
+
         if (Object.keys(this.state.allIcons).length === 8) {
-            if (!this.props.playingFieldChanges.length) {
-                this.canvasContext!.clearRect(0, 0, cW, cH);
+            if (this.props.playingFieldChanges && !this.props.playingFieldChanges.length) {
                 const icon = this.state.allIcons.default;
-                this.props.playingField
-                    .forEach((row, y) => {
-                        row.forEach((cell, x) => {
-                            this.canvasContext!.drawImage(icon, x * 16, y * 16);
-                        })
-                    })
-            } else {
-                this.props.playingFieldChanges
+                for (let x = 0; x < this.canvasSize.width ; x = x + FIELD_CELL_SIZE) {
+                    for (let y = 0; y < this.canvasSize.height; y = y + FIELD_CELL_SIZE) {
+                        this.canvasContext!.drawImage(icon, x, y);
+                    }
+                }
+            } else if (this.props.playingFieldChanges && this.props.playingFieldChanges.length) {
+                this.props.playingFieldChanges!
                     .forEach(item => {
                         let icon!: HTMLImageElement;
                         switch (item.value) {
@@ -96,25 +103,22 @@ export default class PlayingFieldCanvas extends React.Component<Props, State> {
                         }
                         this.canvasContext!.drawImage(
                             icon,
-                            item.x * 16,
-                            item.y * 16,
+                            item.x * FIELD_CELL_SIZE,
+                            item.y * FIELD_CELL_SIZE,
                         );
                     });
             }
         }
+        
         return (
-            <div ref={this.divRef} style={{position: 'relative'}}>
+            <div
+                ref={this.divRef}
+                style={{position: 'relative'}}
+            >
                 <canvas
                     ref={this.canvasRef}
                     onClick={this.handleCanvasClick}
                 />
-                <div style={{position: "absolute", top: 0, left: 0, width: '100%', height: '100%'}}>
-                    <canvas
-                        width="100%"
-                        height="100%"
-                        style={{backgroundColor: '#ffffff'}}
-                    />
-                </div>
             </div>
         );
     }
