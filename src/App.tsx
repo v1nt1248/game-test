@@ -4,7 +4,7 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { WebSocketSrv } from './services';
 import { CommandsType } from './services/websocket.service';
-import { getCommandsType, getPlayingFieldChanges, getPlayingFieldSize } from './helpers';
+import { getCommandsType, getPlayingFieldChanges, getPlayingFieldSize, preparePlayingField } from './helpers';
 import GameSelector from './components/game-selector/GameSelector';
 import PlayingFieldCanvas from './components/playing-field-canvas/PlayingFieldCanvas';
 import GameTimer from './components/game-timer/GameTimer';
@@ -91,8 +91,11 @@ export default class App extends React.Component<Props, State> {
                 toggleTimer: true,
             });
         }
-        WebSocketSrv.sendCommand(CommandsType.open, `${coords.x} ${coords.y}`)
-        WebSocketSrv.sendCommand(CommandsType.map);
+        const currentMap = preparePlayingField(this.playingFieldAsString);
+        if (!currentMap[coords.y][coords.x]) {
+            WebSocketSrv.sendCommand(CommandsType.open, `${coords.x} ${coords.y}`)
+            WebSocketSrv.sendCommand(CommandsType.map);
+        }
     }
 
     render() {
