@@ -9,6 +9,7 @@ import GameSelector from './components/game-selector/GameSelector';
 import PlayingFieldCanvas from './components/playing-field-canvas/PlayingFieldCanvas';
 import GameTimer from './components/game-timer/GameTimer';
 import { PlayingFieldCoords, PlayingFieldValue } from './typing';
+import { testTaskForSorting } from './services/test';
 
 interface Props {}
 interface State {
@@ -32,6 +33,7 @@ export default class App extends React.Component<Props, State> {
     constructor(props: Props) {
         super(props);
         this.playingFieldWrapperRef = React.createRef();
+        testTaskForSorting(); // additional test task
     }
 
     componentWillMount(): void {
